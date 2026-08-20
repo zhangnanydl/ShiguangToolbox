@@ -13,6 +13,19 @@
 
 ![拾光工具箱主界面](docs/screenshot-main.png)
 
+## 下载与安装
+
+无需配置开发环境，普通用户可以直接下载已经打包好的 Windows EXE：
+
+- **安装版（推荐）**：[下载 ShiguangToolbox-Installer-1.1.0-x64.exe](https://github.com/zhangnanydl/ShiguangToolbox/releases/download/v1.1.0/ShiguangToolbox-Installer-1.1.0-x64.exe)  
+  适合长期使用。下载后双击安装，之后可以从开始菜单启动。
+- **便携版**：[下载 ShiguangToolbox-Portable-1.1.0-x64.exe](https://github.com/zhangnanydl/ShiguangToolbox/releases/download/v1.1.0/ShiguangToolbox-Portable-1.1.0-x64.exe)  
+  无需安装，下载后直接双击运行，适合放在移动硬盘或工具目录中。
+
+也可以进入 [GitHub Releases 发布页](https://github.com/zhangnanydl/ShiguangToolbox/releases/latest)，展开页面底部的 **Assets**，按需要选择带有 `Installer`（安装版）或 `Portable`（便携版）的 EXE 文件。请不要下载 `Source code`，它是供开发者使用的源代码压缩包，不能直接运行。
+
+> 当前安装包尚未进行代码签名。Windows SmartScreen 可能显示“未知发布者”，请确认文件来自本项目的 GitHub Releases 页面后再运行。目前仅支持 Windows 10/11 x64。
+
 ## 功能亮点
 
 - 自定义全局唤起快捷键，默认 `Alt + X`
@@ -35,7 +48,7 @@
 
 ## 快速开始
 
-1. 从 GitHub Releases 下载安装版或便携版。
+1. 从上方下载链接获取安装版或便携版 EXE。
 2. 启动后拖入需要管理的程序、快捷方式、文件或文件夹。
 3. 双击卡片启动工具；右上角菜单可编辑、定位或移除。
 4. 在「设置」中修改全局唤起快捷键和启动行为。
