@@ -1,6 +1,6 @@
 const browserDefaults = {
   version: 3,
-  settings: { autoLaunch: true, hideAfterLaunch: false, launcherShortcut: 'Alt+X', zoomFactor: 1 },
+  settings: { autoLaunch: true, hideAfterLaunch: false, launcherShortcut: 'Alt+X' },
   categories: [
     { id: 'development', name: '开发工具', icon: 'terminal' },
     { id: 'security', name: '安全测试', icon: 'shield' },
@@ -64,7 +64,6 @@ const fallback = {
   getFilePath: () => '',
   minimize: () => {},
   hide: () => {},
-  setZoomFactor: async (factor) => Math.round(Math.min(1.25, Math.max(0.8, Number(factor) || 1)) * 10) / 10,
   quit: () => {},
   setAutoLaunch: async (enabled) => enabled,
   getAutoLaunch: async () => true,

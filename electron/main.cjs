@@ -12,7 +12,7 @@ const toolShortcutAccelerators = new Set()
 
 const defaultState = {
   version: 3,
-  settings: { autoLaunch: true, hideAfterLaunch: false, launcherShortcut: 'Alt+X', zoomFactor: 1, windowBounds: null, windowLayoutVersion: 1 },
+  settings: { autoLaunch: true, hideAfterLaunch: false, launcherShortcut: 'Alt+X', windowBounds: null, windowLayoutVersion: 1 },
   categories: [
     { id: 'development', name: '开发工具', icon: 'terminal' },
     { id: 'security', name: '安全测试', icon: 'shield' },
@@ -44,25 +44,19 @@ function readState() {
 function normalizeState(candidate) {
   const source = candidate && typeof candidate === 'object' ? candidate : {}
   const sourceSettings = source.settings && typeof source.settings === 'object' ? source.settings : {}
+  const { zoomFactor: _legacyZoomFactor, ...normalizedSettings } = sourceSettings
   return {
     ...defaultState,
     ...source,
     version: 3,
     settings: {
       ...defaultState.settings,
-      ...sourceSettings,
-      zoomFactor: normalizeZoomFactor(sourceSettings.zoomFactor),
+      ...normalizedSettings,
       windowLayoutVersion: Number.isFinite(sourceSettings.windowLayoutVersion) ? sourceSettings.windowLayoutVersion : 0,
     },
     categories: Array.isArray(source.categories) ? source.categories : defaultState.categories,
     tools: Array.isArray(source.tools) ? source.tools : defaultState.tools,
   }
-}
-
-function normalizeZoomFactor(value) {
-  const numeric = Number(value)
-  if (!Number.isFinite(numeric)) return 1
-  return Math.round(Math.min(1.25, Math.max(0.8, numeric)) * 10) / 10
 }
 
 function writeState(state) {
@@ -334,7 +328,7 @@ function createWindow() {
     ? mainWindow.loadURL('http://127.0.0.1:48673')
     : mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'))
   loadWindow.then(() => {
-    mainWindow.webContents.setZoomFactor(normalizeZoomFactor(readState().settings?.zoomFactor))
+    mainWindow.webContents.setZoomFactor(1)
     if (!process.argv.includes('--hidden')) {
       mainWindow.show()
       mainWindow.focus()
@@ -445,13 +439,6 @@ ipcMain.handle('tools:check-paths', () => {
 ipcMain.handle('tools:reveal', (_event, targetPath) => {
   shell.showItemInFolder(targetPath)
   return true
-})
-ipcMain.handle('window:set-zoom', (_event, requested) => {
-  const zoomFactor = normalizeZoomFactor(requested)
-  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.setZoomFactor(zoomFactor)
-  const state = readState()
-  writeState({ ...state, settings: { ...state.settings, zoomFactor } })
-  return zoomFactor
 })
 ipcMain.handle('settings:auto-launch', (_event, enabled) => {
   const nextValue = Boolean(enabled)

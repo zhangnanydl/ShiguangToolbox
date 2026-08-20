@@ -124,17 +124,6 @@ function AddToolsControl({ adding, onPick }) {
   )
 }
 
-function ZoomControl({ value, onChange }) {
-  const percent = Math.round(value * 100)
-  return (
-    <div className="zoom-control" aria-label="界面缩放">
-      <button aria-label="缩小界面" title="缩小（Ctrl+-）" disabled={value <= .8} onClick={() => onChange(value - .1)}><Minus size={15} /></button>
-      <button className="zoom-value" title="恢复 100%（Ctrl+0）" onClick={() => onChange(1)}>{percent}%</button>
-      <button aria-label="放大界面" title="放大（Ctrl++）" disabled={value >= 1.25} onClick={() => onChange(value + .1)}><Plus size={15} /></button>
-    </div>
-  )
-}
-
 function AppIcon({ tool, small = false }) {
   const [imageFailed, setImageFailed] = useState(false)
   useEffect(() => setImageFailed(false), [tool.icon])
@@ -329,7 +318,6 @@ export default function App() {
   const [toast, setToast] = useState('')
   const [autoLaunch, setAutoLaunch] = useState(false)
   const [adding, setAdding] = useState(false)
-  const [zoomFactor, setZoomFactor] = useState(1)
   const [invalidIds, setInvalidIds] = useState(() => new Set())
   const searchRef = useRef(null)
   const addingRef = useRef(false)
@@ -341,10 +329,7 @@ export default function App() {
 
   useEffect(() => {
     Promise.all([api.loadState(), api.getAutoLaunch(), api.checkPaths()]).then(([loaded, startsAtLogin, invalid]) => {
-      const initialZoom = Number(loaded.settings?.zoomFactor) || 1
       setState(loaded)
-      setZoomFactor(initialZoom)
-      api.setZoomFactor(initialZoom)
       setAutoLaunch(startsAtLogin)
       setInvalidIds(new Set(invalid))
     })
@@ -426,13 +411,6 @@ export default function App() {
       setAdding(false)
     }
   }, [addInspectedTools])
-
-  const changeZoom = useCallback(async (requested) => {
-    const next = Math.round(Math.min(1.25, Math.max(.8, requested)) * 10) / 10
-    setZoomFactor(next)
-    setState((current) => ({ ...current, settings: { ...current.settings, zoomFactor: next } }))
-    try { await api.setZoomFactor(next) } catch { setToast('界面缩放设置失败') }
-  }, [])
 
   const handleDrop = useCallback(async (event) => {
     event.preventDefault()
@@ -549,20 +527,11 @@ export default function App() {
         event.preventDefault()
         searchRef.current?.focus()
         searchRef.current?.select()
-      } else if (event.ctrlKey && ['-', '_'].includes(event.key)) {
-        event.preventDefault()
-        changeZoom(zoomFactor - .1)
-      } else if (event.ctrlKey && ['+', '='].includes(event.key)) {
-        event.preventDefault()
-        changeZoom(zoomFactor + .1)
-      } else if (event.ctrlKey && event.key === '0') {
-        event.preventDefault()
-        changeZoom(1)
       }
     }
     window.addEventListener('keydown', handleShortcut)
     return () => window.removeEventListener('keydown', handleShortcut)
-  }, [changeZoom, zoomFactor])
+  }, [])
 
   if (!state) return <div className="loading"><span /><p>正在整理你的工具箱…</p></div>
 
@@ -574,7 +543,6 @@ export default function App() {
           <h1>{title}</h1>
           <label className="search-box"><Search size={20} /><input ref={searchRef} value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && visibleTools[0]) { event.preventDefault(); launch(visibleTools[0]) } else if (event.key === 'Escape') { setQuery('') } }} placeholder="搜索工具，回车启动首项…" /><kbd>Ctrl K</kbd>{query ? <button aria-label="清空搜索" onClick={() => setQuery('')}><X size={16} /></button> : null}</label>
           <AddToolsControl adding={adding} onPick={chooseTools} />
-          <ZoomControl value={zoomFactor} onChange={changeZoom} />
           <WindowControls />
         </header>
         <div className="content-scroll">

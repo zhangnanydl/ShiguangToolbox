@@ -13,7 +13,6 @@ contextBridge.exposeInMainWorld('toolbox', {
   getFilePath: (file) => webUtils.getPathForFile(file),
   minimize: () => ipcRenderer.send('window:minimize'),
   hide: () => ipcRenderer.send('window:hide'),
-  setZoomFactor: (factor) => ipcRenderer.invoke('window:set-zoom', factor),
   quit: () => ipcRenderer.send('app:quit'),
   setAutoLaunch: (enabled) => ipcRenderer.invoke('settings:auto-launch', enabled),
   getAutoLaunch: () => ipcRenderer.invoke('settings:get-auto-launch'),
