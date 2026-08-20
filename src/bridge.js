@@ -1,5 +1,5 @@
 const browserDefaults = {
-  version: 2,
+  version: 3,
   settings: { autoLaunch: true, hideAfterLaunch: false, launcherShortcut: 'Alt+X' },
   categories: [
     { id: 'development', name: '开发工具', icon: 'terminal' },
@@ -19,11 +19,27 @@ const browserDefaults = {
   ],
 }
 
+const previewCategoryNames = ['开发工具', '安全测试', '系统管理', '网络分析', '数据库', '设计工具', '办公软件', '媒体处理', 'AI 工具', '自动化', '逆向分析', '移动开发', '云平台', '监控诊断', '文档资料', '常用脚本', '临时工具', '其他收藏']
+const browserStressDefaults = {
+  ...browserDefaults,
+  categories: previewCategoryNames.map((name, index) => ({ id: `preview-category-${index}`, name, icon: ['terminal', 'shield', 'settings', 'globe', 'box', 'palette'][index % 6] })),
+  tools: Array.from({ length: 40 }, (_, index) => ({
+    ...browserDefaults.tools[index % browserDefaults.tools.length],
+    id: `preview-tool-${index}`,
+    name: `${browserDefaults.tools[index % browserDefaults.tools.length].name} ${index + 1}`,
+    categoryId: `preview-category-${index % previewCategoryNames.length}`,
+    favorite: index < 5,
+    addedAt: index + 1,
+  })),
+}
+
 const fallback = {
   loadState: async () => {
-    if (new URLSearchParams(window.location.search).has('preview')) return browserDefaults
+    const preview = new URLSearchParams(window.location.search).get('preview')
+    if (preview === 'stress') return browserStressDefaults
+    if (preview !== null) return browserDefaults
     const stored = JSON.parse(localStorage.getItem('toolbox-preview') || 'null')
-    return stored ? { ...browserDefaults, ...stored, version: 2, settings: { ...browserDefaults.settings, ...(stored.settings || {}) } } : browserDefaults
+    return stored ? { ...browserDefaults, ...stored, version: 3, settings: { ...browserDefaults.settings, ...(stored.settings || {}) } } : browserDefaults
   },
   saveState: async (state) => { localStorage.setItem('toolbox-preview', JSON.stringify(state)); return { ok: true, shortcutFailures: [] } },
   pickTools: async () => [],

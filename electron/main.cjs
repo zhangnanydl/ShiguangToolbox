@@ -11,8 +11,8 @@ let boundsSaveTimer
 const toolShortcutAccelerators = new Set()
 
 const defaultState = {
-  version: 2,
-  settings: { autoLaunch: true, hideAfterLaunch: false, launcherShortcut: 'Alt+X', windowBounds: null },
+  version: 3,
+  settings: { autoLaunch: true, hideAfterLaunch: false, launcherShortcut: 'Alt+X', windowBounds: null, windowLayoutVersion: 1 },
   categories: [
     { id: 'development', name: '开发工具', icon: 'terminal' },
     { id: 'security', name: '安全测试', icon: 'shield' },
@@ -43,11 +43,16 @@ function readState() {
 
 function normalizeState(candidate) {
   const source = candidate && typeof candidate === 'object' ? candidate : {}
+  const sourceSettings = source.settings && typeof source.settings === 'object' ? source.settings : {}
   return {
     ...defaultState,
     ...source,
-    version: 2,
-    settings: { ...defaultState.settings, ...(source.settings || {}) },
+    version: 3,
+    settings: {
+      ...defaultState.settings,
+      ...sourceSettings,
+      windowLayoutVersion: Number.isFinite(sourceSettings.windowLayoutVersion) ? sourceSettings.windowLayoutVersion : 0,
+    },
     categories: Array.isArray(source.categories) ? source.categories : defaultState.categories,
     tools: Array.isArray(source.tools) ? source.tools : defaultState.tools,
   }
@@ -157,7 +162,8 @@ function updateTrayMenu() {
 }
 
 function getInitialBounds() {
-  const saved = readState().settings?.windowBounds
+  const state = readState()
+  const saved = state.settings?.windowBounds
   const valid = saved && ['x', 'y', 'width', 'height'].every((key) => Number.isFinite(saved[key]))
   if (valid) {
     const visible = screen.getAllDisplays().some(({ workArea }) => (
@@ -166,11 +172,27 @@ function getInitialBounds() {
       saved.y < workArea.y + workArea.height - 60 &&
       saved.y + saved.height > workArea.y + 60
     ))
-    if (visible) return { x: saved.x, y: saved.y, width: Math.max(780, saved.width), height: Math.max(520, saved.height) }
+    if (visible) {
+      if ((state.settings?.windowLayoutVersion || 0) >= 1) {
+        return { x: saved.x, y: saved.y, width: Math.max(680, saved.width), height: Math.max(560, saved.height) }
+      }
+
+      const { workArea } = screen.getDisplayMatching(saved)
+      const targetHeight = Math.max(560, Math.min(880, workArea.height - 24))
+      const targetWidth = Math.max(680, Math.min(760, workArea.width - 24, targetHeight - 64))
+      const migrated = {
+        x: Math.round(Math.min(Math.max(saved.x + (saved.width - targetWidth) / 2, workArea.x), workArea.x + workArea.width - targetWidth)),
+        y: Math.round(Math.min(Math.max(saved.y + (saved.height - targetHeight) / 2, workArea.y), workArea.y + workArea.height - targetHeight)),
+        width: targetWidth,
+        height: targetHeight,
+      }
+      writeState({ ...state, settings: { ...state.settings, windowBounds: migrated, windowLayoutVersion: 1 } })
+      return migrated
+    }
   }
   const { x, y, width, height } = screen.getPrimaryDisplay().workArea
-  const windowWidth = Math.min(1060, width)
-  const windowHeight = Math.min(680, height)
+  const windowHeight = Math.max(560, Math.min(880, height - 24))
+  const windowWidth = Math.max(680, Math.min(760, width - 24, windowHeight - 64))
   return {
     x: Math.round(x + (width - windowWidth) / 2),
     y: Math.round(y + (height - windowHeight) / 2),
@@ -182,7 +204,7 @@ function getInitialBounds() {
 function saveWindowBounds() {
   if (!mainWindow || mainWindow.isMinimized() || mainWindow.isMaximized()) return
   const state = readState()
-  writeState({ ...state, settings: { ...state.settings, windowBounds: mainWindow.getNormalBounds() } })
+  writeState({ ...state, settings: { ...state.settings, windowBounds: mainWindow.getNormalBounds(), windowLayoutVersion: 1 } })
 }
 
 function queueBoundsSave() {
@@ -269,8 +291,8 @@ function createWindow() {
   const initialBounds = getInitialBounds()
   mainWindow = new BrowserWindow({
     ...initialBounds,
-    minWidth: 780,
-    minHeight: 520,
+    minWidth: 680,
+    minHeight: 560,
     show: false,
     frame: false,
     transparent: true,
