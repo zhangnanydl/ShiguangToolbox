@@ -62,7 +62,7 @@ function ShortcutKeys({ value }) {
 
 function NavItem({ active, icon: Icon, label, count, onClick }) {
   return (
-    <button className={`nav-item ${active ? 'active' : ''}`} onClick={onClick}>
+    <button className={`nav-item ${active ? 'active' : ''}`} title={label} onClick={onClick}>
       <Icon size={20} strokeWidth={1.9} />
       <span>{label}</span>
       {count ? <small>{count}</small> : null}
@@ -186,6 +186,14 @@ const ToolCard = memo(function ToolCard({ tool, categoryName, invalid = false, c
       <div className="tool-meta"><strong title={tool.name}>{tool.name}</strong><span>{categoryName}</span></div>
       <span className={`launch-label ${invalid ? 'path-invalid' : ''}`}>{invalid ? '路径已失效 · 请在菜单中重新定位' : tool.shortcut ? `${tool.shortcut} · 双击启动` : '双击启动'}</span>
     </article>
+  )
+})
+
+const ToolGrid = memo(function ToolGrid({ tools, view, categoryMap, invalidIds, canReorder, onReorder, onLaunch, onFavorite, onEdit, onDelete, onReveal }) {
+  return (
+    <div className={`tool-grid ${view === 'list' ? 'list-view' : ''}`}>
+      {tools.map((tool) => <ToolCard key={tool.id} tool={tool} categoryName={categoryMap.get(tool.categoryId) || '未分类'} invalid={invalidIds.has(tool.id)} canReorder={canReorder} onReorder={onReorder} onLaunch={onLaunch} onFavorite={onFavorite} onEdit={onEdit} onDelete={onDelete} onReveal={onReveal} />)}
+    </div>
   )
 })
 
@@ -366,6 +374,10 @@ export default function App() {
     ['uncategorized', '未分类'],
     ...(state?.categories || []).map((category) => [category.id, category.name]),
   ]), [state?.categories])
+  const categoryIconMap = useMemo(() => new Map([
+    ['uncategorized', 'folder'],
+    ...(state?.categories || []).map((category) => [category.id, category.icon || 'box']),
+  ]), [state?.categories])
 
   const visibleTools = useMemo(() => {
     if (!state) return []
@@ -383,6 +395,20 @@ export default function App() {
   }, [categoryMap, deferredQuery, invalidIds, selection, sort, state])
 
   const favorites = useMemo(() => state?.tools.filter((tool) => tool.favorite).slice(0, 4) || [], [state?.tools])
+  const toolGroups = useMemo(() => {
+    if (selection !== 'all') return []
+    const buckets = new Map()
+    for (const tool of visibleTools) {
+      const categoryId = categoryMap.has(tool.categoryId) ? tool.categoryId : 'uncategorized'
+      if (!buckets.has(categoryId)) buckets.set(categoryId, [])
+      buckets.get(categoryId).push(tool)
+    }
+    const categoryOrder = [...(state?.categories || []).map((category) => category.id), 'uncategorized']
+    return categoryOrder.flatMap((categoryId) => {
+      const tools = buckets.get(categoryId)
+      return tools?.length ? [{ id: categoryId, name: categoryMap.get(categoryId) || '未分类', icon: categoryIconMap.get(categoryId) || 'box', tools }] : []
+    })
+  }, [categoryIconMap, categoryMap, selection, state?.categories, visibleTools])
   const title = selection === 'all' ? '全部工具' : selection === 'favorites' ? '常用工具' : selection === 'recent' ? '最近使用' : selection === 'invalid' ? '失效工具' : categoryMap.get(selection) || '工具'
   const canReorderTools = sort === 'default' && !deferredQuery && !['favorites', 'recent', 'invalid'].includes(selection)
 
@@ -546,10 +572,10 @@ export default function App() {
           <WindowControls />
         </header>
         <div className="content-scroll">
-          {selection === 'all' && favorites.length ? <section className="favorites-section"><h2>常用工具</h2><div className="favorite-row">{favorites.map((tool) => <ToolCard key={tool.id} compact tool={tool} categoryName={categoryMap.get(tool.categoryId)} onLaunch={launch} />)}</div></section> : null}
+          {selection === 'all' && !deferredQuery && favorites.length ? <section className="favorites-section"><h2>常用工具</h2><div className="favorite-row">{favorites.map((tool) => <ToolCard key={tool.id} compact tool={tool} categoryName={categoryMap.get(tool.categoryId)} onLaunch={launch} />)}</div></section> : null}
           <section className="tools-section">
             <div className="section-heading"><div><h2>{selection === 'all' ? '全部工具' : title}</h2><span>{visibleTools.length} 个工具</span></div><div className="section-actions"><label className="sort-select"><span>排序</span><select value={sort} onChange={(event) => setSort(event.target.value)}><option value="default">默认</option><option value="added">最新添加</option><option value="name">名称</option><option value="frequent">最常使用</option><option value="recent">最近使用</option></select><ChevronDown size={14} /></label><div className="view-toggle"><button className={view === 'grid' ? 'active' : ''} aria-label="网格视图" onClick={() => setView('grid')}><Grid2X2 size={18} /></button><button className={view === 'list' ? 'active' : ''} aria-label="列表视图" onClick={() => setView('list')}><List size={19} /></button></div></div></div>
-            {visibleTools.length ? <div className={`tool-grid ${view === 'list' ? 'list-view' : ''}`}>{visibleTools.map((tool) => <ToolCard key={tool.id} tool={tool} categoryName={categoryMap.get(tool.categoryId) || '未分类'} invalid={invalidIds.has(tool.id)} canReorder={canReorderTools} onReorder={reorderTools} onLaunch={launch} onFavorite={toggleFavorite} onEdit={editTool} onDelete={deleteTool} onReveal={api.revealTool} />)}</div> : <EmptyState filtered={Boolean(deferredQuery)} onAdd={() => chooseTools('files')} />}
+            {visibleTools.length ? selection === 'all' ? <div className="categorized-tools">{toolGroups.map((group) => { const GroupIcon = iconMap[group.icon] || Box; return <section className="category-tool-group" key={group.id}><header className="category-group-heading"><span><GroupIcon size={16} /><b>{group.name}</b></span><small>{group.tools.length} 个</small></header><ToolGrid tools={group.tools} view={view} categoryMap={categoryMap} invalidIds={invalidIds} canReorder={canReorderTools} onReorder={reorderTools} onLaunch={launch} onFavorite={toggleFavorite} onEdit={editTool} onDelete={deleteTool} onReveal={api.revealTool} /></section> })}</div> : <ToolGrid tools={visibleTools} view={view} categoryMap={categoryMap} invalidIds={invalidIds} canReorder={canReorderTools} onReorder={reorderTools} onLaunch={launch} onFavorite={toggleFavorite} onEdit={editTool} onDelete={deleteTool} onReveal={api.revealTool} /> : <EmptyState filtered={Boolean(deferredQuery)} onAdd={() => chooseTools('files')} />}
           </section>
           <button className="drop-zone" onClick={() => chooseTools('files')}><UploadCloud size={28} /><span><b>拖入 EXE、快捷方式、文件或文件夹</b><small>支持批量拖拽添加，点击可选择程序或文件</small></span></button>
         </div>

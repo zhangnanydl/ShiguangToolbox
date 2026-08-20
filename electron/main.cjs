@@ -9,19 +9,41 @@ let isQuitting = false
 let launcherShortcut = ''
 let boundsSaveTimer
 const toolShortcutAccelerators = new Set()
+const windowsDirectory = process.env.WINDIR || 'C:\\Windows'
+const systemPresetCategory = { id: 'windows-admin', name: 'Windows 管理', icon: 'settings' }
+const systemPresetTools = [
+  { id: 'preset-task-manager', name: '任务管理器', path: path.join(windowsDirectory, 'System32', 'Taskmgr.exe'), type: 'exe', iconPreset: 'utility' },
+  { id: 'preset-services', name: '服务管理', path: path.join(windowsDirectory, 'System32', 'services.msc'), type: 'msc', iconPreset: 'system' },
+  { id: 'preset-group-policy', name: '本地组策略', path: path.join(windowsDirectory, 'System32', 'gpedit.msc'), type: 'msc', iconPreset: 'security' },
+  { id: 'preset-computer-management', name: '计算机管理', path: path.join(windowsDirectory, 'System32', 'compmgmt.msc'), type: 'msc', iconPreset: 'system' },
+  { id: 'preset-event-viewer', name: '事件查看器', path: path.join(windowsDirectory, 'System32', 'eventvwr.msc'), type: 'msc', iconPreset: 'utility' },
+  { id: 'preset-task-scheduler', name: '任务计划程序', path: path.join(windowsDirectory, 'System32', 'taskschd.msc'), type: 'msc', iconPreset: 'terminal' },
+  { id: 'preset-device-manager', name: '设备管理器', path: path.join(windowsDirectory, 'System32', 'devmgmt.msc'), type: 'msc', iconPreset: 'system' },
+  { id: 'preset-resource-monitor', name: '资源监视器', path: path.join(windowsDirectory, 'System32', 'resmon.exe'), type: 'exe', iconPreset: 'utility' },
+].map((tool, index) => ({
+  ...tool,
+  icon: null,
+  categoryId: systemPresetCategory.id,
+  favorite: false,
+  addedAt: 10 + index,
+  lastOpenedAt: 0,
+  openCount: 0,
+}))
 
 const defaultState = {
-  version: 3,
-  settings: { autoLaunch: true, hideAfterLaunch: false, launcherShortcut: 'Alt+X', windowBounds: null, windowLayoutVersion: 1 },
+  version: 4,
+  settings: { autoLaunch: true, hideAfterLaunch: false, launcherShortcut: 'Alt+X', systemPresetsSeeded: true, windowBounds: null, windowLayoutVersion: 1 },
   categories: [
     { id: 'development', name: '开发工具', icon: 'terminal' },
     { id: 'security', name: '安全测试', icon: 'shield' },
     { id: 'design', name: '设计', icon: 'palette' },
     { id: 'system', name: '系统工具', icon: 'settings' },
+    systemPresetCategory,
   ],
   tools: [
     { id: 'starter-terminal', name: 'Windows 终端', path: 'C:\\Windows\\System32\\cmd.exe', type: 'exe', icon: null, categoryId: 'system', favorite: true, addedAt: 1, lastOpenedAt: 0, openCount: 0 },
     { id: 'starter-explorer', name: '文件资源管理器', path: 'C:\\Windows\\explorer.exe', type: 'exe', icon: null, categoryId: 'system', favorite: false, addedAt: 2, lastOpenedAt: 0, openCount: 0 },
+    ...systemPresetTools,
   ],
 }
 
@@ -45,17 +67,29 @@ function normalizeState(candidate) {
   const source = candidate && typeof candidate === 'object' ? candidate : {}
   const sourceSettings = source.settings && typeof source.settings === 'object' ? source.settings : {}
   const { zoomFactor: _legacyZoomFactor, ...normalizedSettings } = sourceSettings
+  const shouldSeedSystemPresets = sourceSettings.systemPresetsSeeded !== true
+  const categories = Array.isArray(source.categories) ? [...source.categories] : [...defaultState.categories]
+  const tools = Array.isArray(source.tools) ? [...source.tools] : [...defaultState.tools]
+  if (shouldSeedSystemPresets && !categories.some((category) => category.id === systemPresetCategory.id)) categories.push(systemPresetCategory)
+  if (shouldSeedSystemPresets) {
+    const existingIds = new Set(tools.map((tool) => tool.id))
+    const existingPaths = new Set(tools.map((tool) => String(tool.path || '').toLowerCase()))
+    for (const preset of systemPresetTools) {
+      if (!existingIds.has(preset.id) && !existingPaths.has(preset.path.toLowerCase())) tools.push(preset)
+    }
+  }
   return {
     ...defaultState,
     ...source,
-    version: 3,
+    version: 4,
     settings: {
       ...defaultState.settings,
       ...normalizedSettings,
+      systemPresetsSeeded: true,
       windowLayoutVersion: Number.isFinite(sourceSettings.windowLayoutVersion) ? sourceSettings.windowLayoutVersion : 0,
     },
-    categories: Array.isArray(source.categories) ? source.categories : defaultState.categories,
-    tools: Array.isArray(source.tools) ? source.tools : defaultState.tools,
+    categories,
+    tools,
   }
 }
 

@@ -1,11 +1,12 @@
 const browserDefaults = {
-  version: 3,
-  settings: { autoLaunch: true, hideAfterLaunch: false, launcherShortcut: 'Alt+X' },
+  version: 4,
+  settings: { autoLaunch: true, hideAfterLaunch: false, launcherShortcut: 'Alt+X', systemPresetsSeeded: true },
   categories: [
     { id: 'development', name: '开发工具', icon: 'terminal' },
     { id: 'security', name: '安全测试', icon: 'shield' },
     { id: 'design', name: '设计', icon: 'palette' },
     { id: 'system', name: '系统工具', icon: 'settings' },
+    { id: 'windows-admin', name: 'Windows 管理', icon: 'settings' },
   ],
   tools: [
     { id: 'demo-1', name: 'Windows 终端', path: 'C:\\Windows\\System32\\cmd.exe', type: 'exe', icon: null, iconPreset: 'terminal', categoryId: 'system', favorite: true, shortcut: 'Ctrl+Alt+T', addedAt: 1, lastOpenedAt: 0, openCount: 0 },
@@ -16,6 +17,14 @@ const browserDefaults = {
     { id: 'demo-6', name: 'WPS Office', path: 'C:\\Tools\\WPS.exe', type: 'exe', icon: null, iconPreset: 'office', categoryId: 'uncategorized', favorite: false, addedAt: 6, lastOpenedAt: 0, openCount: 0 },
     { id: 'demo-7', name: 'WizTree', path: 'C:\\Tools\\WizTree.exe', type: 'exe', icon: null, iconPreset: 'utility', categoryId: 'system', favorite: false, addedAt: 7, lastOpenedAt: 0, openCount: 0 },
     { id: 'demo-8', name: 'OBS Studio', path: 'C:\\Tools\\obs64.exe', type: 'exe', icon: null, iconPreset: 'media', categoryId: 'uncategorized', favorite: false, addedAt: 8, lastOpenedAt: 0, openCount: 0 },
+    { id: 'preset-task-manager', name: '任务管理器', path: 'C:\\Windows\\System32\\Taskmgr.exe', type: 'exe', icon: null, iconPreset: 'utility', categoryId: 'windows-admin', favorite: false, addedAt: 10, lastOpenedAt: 0, openCount: 0 },
+    { id: 'preset-services', name: '服务管理', path: 'C:\\Windows\\System32\\services.msc', type: 'msc', icon: null, iconPreset: 'system', categoryId: 'windows-admin', favorite: false, addedAt: 11, lastOpenedAt: 0, openCount: 0 },
+    { id: 'preset-group-policy', name: '本地组策略', path: 'C:\\Windows\\System32\\gpedit.msc', type: 'msc', icon: null, iconPreset: 'security', categoryId: 'windows-admin', favorite: false, addedAt: 12, lastOpenedAt: 0, openCount: 0 },
+    { id: 'preset-computer-management', name: '计算机管理', path: 'C:\\Windows\\System32\\compmgmt.msc', type: 'msc', icon: null, iconPreset: 'system', categoryId: 'windows-admin', favorite: false, addedAt: 13, lastOpenedAt: 0, openCount: 0 },
+    { id: 'preset-event-viewer', name: '事件查看器', path: 'C:\\Windows\\System32\\eventvwr.msc', type: 'msc', icon: null, iconPreset: 'utility', categoryId: 'windows-admin', favorite: false, addedAt: 14, lastOpenedAt: 0, openCount: 0 },
+    { id: 'preset-task-scheduler', name: '任务计划程序', path: 'C:\\Windows\\System32\\taskschd.msc', type: 'msc', icon: null, iconPreset: 'terminal', categoryId: 'windows-admin', favorite: false, addedAt: 15, lastOpenedAt: 0, openCount: 0 },
+    { id: 'preset-device-manager', name: '设备管理器', path: 'C:\\Windows\\System32\\devmgmt.msc', type: 'msc', icon: null, iconPreset: 'system', categoryId: 'windows-admin', favorite: false, addedAt: 16, lastOpenedAt: 0, openCount: 0 },
+    { id: 'preset-resource-monitor', name: '资源监视器', path: 'C:\\Windows\\System32\\resmon.exe', type: 'exe', icon: null, iconPreset: 'utility', categoryId: 'windows-admin', favorite: false, addedAt: 17, lastOpenedAt: 0, openCount: 0 },
   ],
 }
 
@@ -39,7 +48,7 @@ const fallback = {
     if (preview === 'stress') return browserStressDefaults
     if (preview !== null) return browserDefaults
     const stored = JSON.parse(localStorage.getItem('toolbox-preview') || 'null')
-    return stored ? { ...browserDefaults, ...stored, version: 3, settings: { ...browserDefaults.settings, ...(stored.settings || {}) } } : browserDefaults
+    return stored ? { ...browserDefaults, ...stored, version: 4, settings: { ...browserDefaults.settings, ...(stored.settings || {}) } } : browserDefaults
   },
   saveState: async (state) => { localStorage.setItem('toolbox-preview', JSON.stringify(state)); return { ok: true, shortcutFailures: [] } },
   pickTools: async (mode = 'files') => [{

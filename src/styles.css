@@ -154,6 +154,14 @@ kbd { display: inline-flex; align-items: center; justify-content: center; min-wi
 .view-toggle button.active { color: #32a9ff; background: rgba(22,140,255,.13); }
 
 .tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(138px, 1fr)); gap: 9px; }
+.categorized-tools { display: grid; gap: 20px; }
+.category-tool-group { min-width: 0; }
+.category-tool-group + .category-tool-group { padding-top: 18px; border-top: 1px solid rgba(83, 116, 151, .14); }
+.category-group-heading { display: flex; align-items: center; justify-content: space-between; min-height: 29px; margin-bottom: 9px; }
+.category-group-heading > span { display: inline-flex; align-items: center; gap: 8px; min-width: 0; color: #40566e; }
+.category-group-heading > span > svg { flex: 0 0 auto; color: #1689e4; }
+.category-group-heading b { overflow: hidden; font-size: 12px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.category-group-heading small { flex: 0 0 auto; padding: 3px 7px; color: #8190a3; background: rgba(93, 126, 163, .07); border-radius: 10px; font-size: 9px; }
 .tool-card { position: relative; display: flex; flex-direction: column; min-width: 0; height: 140px; padding: 15px 13px 11px; overflow: visible; background: linear-gradient(145deg, rgba(22, 36, 54, .82), rgba(16, 27, 41, .72)); border: 1px solid rgba(159, 190, 223, .16); border-radius: 10px; outline: 0; transition: 150ms ease; }
 .tool-card:hover, .tool-card:focus-visible { background: linear-gradient(145deg, rgba(24, 51, 82, .94), rgba(17, 34, 54, .92)); border-color: rgba(39, 151, 255, .7); box-shadow: 0 8px 24px rgba(0,0,0,.18), inset 0 0 0 1px rgba(22,140,255,.05); transform: translateY(-2px); }
 .tool-card.reorderable { cursor: grab; }
