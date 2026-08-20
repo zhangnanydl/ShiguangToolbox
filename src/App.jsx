@@ -117,8 +117,8 @@ function AddToolsControl({ adding, onPick }) {
   const pick = (mode) => { setOpen(false); onPick(mode) }
   return (
     <div className="add-control" ref={ref}>
-      <button className="add-button" disabled={adding} onClick={() => pick('files')}>{adding ? <span className="button-spinner" /> : <Plus size={18} />}<span>{adding ? '选择中' : '添加工具'}</span></button>
-      <button className="add-menu-button" disabled={adding} aria-label="更多添加方式" aria-expanded={open} onClick={() => setOpen((value) => !value)}><ChevronDown size={15} /></button>
+      <button className="add-button" title="选择程序、快捷方式或文件" disabled={adding} onClick={() => pick('files')}>{adding ? <span className="button-spinner" /> : <Plus size={18} />}<span>{adding ? '选择中' : '添加工具'}</span></button>
+      <button className="add-menu-button" title="更多添加方式" disabled={adding} aria-label="更多添加方式" aria-expanded={open} onClick={() => setOpen((value) => !value)}><ChevronDown size={15} /></button>
       {open ? <div className="add-menu" role="menu"><button onClick={() => pick('files')}><File size={17} /><span><b>选择程序或文件</b><small>支持 EXE、快捷方式及普通文件</small></span></button><button onClick={() => pick('folder')}><FolderOpen size={17} /><span><b>选择文件夹</b><small>将常用目录加入工具箱</small></span></button></div> : null}
     </div>
   )
