@@ -105,6 +105,36 @@ function WindowControls() {
   )
 }
 
+function AddToolsControl({ adding, onPick }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+  useEffect(() => {
+    if (!open) return undefined
+    const close = (event) => { if (!ref.current?.contains(event.target)) setOpen(false) }
+    window.addEventListener('pointerdown', close)
+    return () => window.removeEventListener('pointerdown', close)
+  }, [open])
+  const pick = (mode) => { setOpen(false); onPick(mode) }
+  return (
+    <div className="add-control" ref={ref}>
+      <button className="add-button" disabled={adding} onClick={() => pick('files')}>{adding ? <span className="button-spinner" /> : <Plus size={18} />}<span>{adding ? '选择中' : '添加工具'}</span></button>
+      <button className="add-menu-button" disabled={adding} aria-label="更多添加方式" aria-expanded={open} onClick={() => setOpen((value) => !value)}><ChevronDown size={15} /></button>
+      {open ? <div className="add-menu" role="menu"><button onClick={() => pick('files')}><File size={17} /><span><b>选择程序或文件</b><small>支持 EXE、快捷方式及普通文件</small></span></button><button onClick={() => pick('folder')}><FolderOpen size={17} /><span><b>选择文件夹</b><small>将常用目录加入工具箱</small></span></button></div> : null}
+    </div>
+  )
+}
+
+function ZoomControl({ value, onChange }) {
+  const percent = Math.round(value * 100)
+  return (
+    <div className="zoom-control" aria-label="界面缩放">
+      <button aria-label="缩小界面" title="缩小（Ctrl+-）" disabled={value <= .8} onClick={() => onChange(value - .1)}><Minus size={15} /></button>
+      <button className="zoom-value" title="恢复 100%（Ctrl+0）" onClick={() => onChange(1)}>{percent}%</button>
+      <button aria-label="放大界面" title="放大（Ctrl++）" disabled={value >= 1.25} onClick={() => onChange(value + .1)}><Plus size={15} /></button>
+    </div>
+  )
+}
+
 function AppIcon({ tool, small = false }) {
   const [imageFailed, setImageFailed] = useState(false)
   useEffect(() => setImageFailed(false), [tool.icon])
@@ -299,6 +329,7 @@ export default function App() {
   const [toast, setToast] = useState('')
   const [autoLaunch, setAutoLaunch] = useState(false)
   const [adding, setAdding] = useState(false)
+  const [zoomFactor, setZoomFactor] = useState(1)
   const [invalidIds, setInvalidIds] = useState(() => new Set())
   const searchRef = useRef(null)
   const addingRef = useRef(false)
@@ -310,7 +341,10 @@ export default function App() {
 
   useEffect(() => {
     Promise.all([api.loadState(), api.getAutoLaunch(), api.checkPaths()]).then(([loaded, startsAtLogin, invalid]) => {
+      const initialZoom = Number(loaded.settings?.zoomFactor) || 1
       setState(loaded)
+      setZoomFactor(initialZoom)
+      api.setZoomFactor(initialZoom)
       setAutoLaunch(startsAtLogin)
       setInvalidIds(new Set(invalid))
     })
@@ -379,12 +413,12 @@ export default function App() {
     })
   }, [selection])
 
-  const chooseTools = useCallback(async () => {
+  const chooseTools = useCallback(async (mode = 'files') => {
     if (addingRef.current) return
     addingRef.current = true
     setAdding(true)
     try {
-      addInspectedTools(await api.pickTools())
+      addInspectedTools(await api.pickTools(mode))
     } catch {
       setToast('无法打开文件选择窗口，请稍后重试')
     } finally {
@@ -392,6 +426,13 @@ export default function App() {
       setAdding(false)
     }
   }, [addInspectedTools])
+
+  const changeZoom = useCallback(async (requested) => {
+    const next = Math.round(Math.min(1.25, Math.max(.8, requested)) * 10) / 10
+    setZoomFactor(next)
+    setState((current) => ({ ...current, settings: { ...current.settings, zoomFactor: next } }))
+    try { await api.setZoomFactor(next) } catch { setToast('界面缩放设置失败') }
+  }, [])
 
   const handleDrop = useCallback(async (event) => {
     event.preventDefault()
@@ -508,11 +549,20 @@ export default function App() {
         event.preventDefault()
         searchRef.current?.focus()
         searchRef.current?.select()
+      } else if (event.ctrlKey && ['-', '_'].includes(event.key)) {
+        event.preventDefault()
+        changeZoom(zoomFactor - .1)
+      } else if (event.ctrlKey && ['+', '='].includes(event.key)) {
+        event.preventDefault()
+        changeZoom(zoomFactor + .1)
+      } else if (event.ctrlKey && event.key === '0') {
+        event.preventDefault()
+        changeZoom(1)
       }
     }
     window.addEventListener('keydown', handleShortcut)
     return () => window.removeEventListener('keydown', handleShortcut)
-  }, [])
+  }, [changeZoom, zoomFactor])
 
   if (!state) return <div className="loading"><span /><p>正在整理你的工具箱…</p></div>
 
@@ -523,16 +573,17 @@ export default function App() {
         <header className="topbar">
           <h1>{title}</h1>
           <label className="search-box"><Search size={20} /><input ref={searchRef} value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && visibleTools[0]) { event.preventDefault(); launch(visibleTools[0]) } else if (event.key === 'Escape') { setQuery('') } }} placeholder="搜索工具，回车启动首项…" /><kbd>Ctrl K</kbd>{query ? <button aria-label="清空搜索" onClick={() => setQuery('')}><X size={16} /></button> : null}</label>
-          <button className="add-button" disabled={adding} onClick={chooseTools}>{adding ? <span className="button-spinner" /> : <Plus size={18} />}<span>{adding ? '选择中' : '添加工具'}</span></button>
+          <AddToolsControl adding={adding} onPick={chooseTools} />
+          <ZoomControl value={zoomFactor} onChange={changeZoom} />
           <WindowControls />
         </header>
         <div className="content-scroll">
           {selection === 'all' && favorites.length ? <section className="favorites-section"><h2>常用工具</h2><div className="favorite-row">{favorites.map((tool) => <ToolCard key={tool.id} compact tool={tool} categoryName={categoryMap.get(tool.categoryId)} onLaunch={launch} />)}</div></section> : null}
           <section className="tools-section">
             <div className="section-heading"><div><h2>{selection === 'all' ? '全部工具' : title}</h2><span>{visibleTools.length} 个工具</span></div><div className="section-actions"><label className="sort-select"><span>排序</span><select value={sort} onChange={(event) => setSort(event.target.value)}><option value="default">默认</option><option value="added">最新添加</option><option value="name">名称</option><option value="frequent">最常使用</option><option value="recent">最近使用</option></select><ChevronDown size={14} /></label><div className="view-toggle"><button className={view === 'grid' ? 'active' : ''} aria-label="网格视图" onClick={() => setView('grid')}><Grid2X2 size={18} /></button><button className={view === 'list' ? 'active' : ''} aria-label="列表视图" onClick={() => setView('list')}><List size={19} /></button></div></div></div>
-            {visibleTools.length ? <div className={`tool-grid ${view === 'list' ? 'list-view' : ''}`}>{visibleTools.map((tool) => <ToolCard key={tool.id} tool={tool} categoryName={categoryMap.get(tool.categoryId) || '未分类'} invalid={invalidIds.has(tool.id)} canReorder={canReorderTools} onReorder={reorderTools} onLaunch={launch} onFavorite={toggleFavorite} onEdit={editTool} onDelete={deleteTool} onReveal={api.revealTool} />)}</div> : <EmptyState filtered={Boolean(deferredQuery)} onAdd={chooseTools} />}
+            {visibleTools.length ? <div className={`tool-grid ${view === 'list' ? 'list-view' : ''}`}>{visibleTools.map((tool) => <ToolCard key={tool.id} tool={tool} categoryName={categoryMap.get(tool.categoryId) || '未分类'} invalid={invalidIds.has(tool.id)} canReorder={canReorderTools} onReorder={reorderTools} onLaunch={launch} onFavorite={toggleFavorite} onEdit={editTool} onDelete={deleteTool} onReveal={api.revealTool} />)}</div> : <EmptyState filtered={Boolean(deferredQuery)} onAdd={() => chooseTools('files')} />}
           </section>
-          <button className="drop-zone" onClick={chooseTools}><UploadCloud size={28} /><span><b>拖入 EXE、快捷方式、文件或文件夹</b><small>支持批量拖拽添加，也可以点击此处选择</small></span></button>
+          <button className="drop-zone" onClick={() => chooseTools('files')}><UploadCloud size={28} /><span><b>拖入 EXE、快捷方式、文件或文件夹</b><small>支持批量拖拽添加，点击可选择程序或文件</small></span></button>
         </div>
       </section>
       {dragging ? <div className="drop-overlay"><div><UploadCloud size={44} /><h2>松开即可添加</h2><p>工具将保存到「{selection !== 'all' && !['favorites', 'recent', 'invalid'].includes(selection) ? categoryMap.get(selection) : '未分类'}」</p></div></div> : null}

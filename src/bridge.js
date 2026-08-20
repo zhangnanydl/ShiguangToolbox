@@ -1,6 +1,6 @@
 const browserDefaults = {
   version: 3,
-  settings: { autoLaunch: true, hideAfterLaunch: false, launcherShortcut: 'Alt+X' },
+  settings: { autoLaunch: true, hideAfterLaunch: false, launcherShortcut: 'Alt+X', zoomFactor: 1 },
   categories: [
     { id: 'development', name: '开发工具', icon: 'terminal' },
     { id: 'security', name: '安全测试', icon: 'shield' },
@@ -42,7 +42,19 @@ const fallback = {
     return stored ? { ...browserDefaults, ...stored, version: 3, settings: { ...browserDefaults.settings, ...(stored.settings || {}) } } : browserDefaults
   },
   saveState: async (state) => { localStorage.setItem('toolbox-preview', JSON.stringify(state)); return { ok: true, shortcutFailures: [] } },
-  pickTools: async () => [],
+  pickTools: async (mode = 'files') => [{
+    id: `preview-added-${Date.now()}`,
+    name: mode === 'folder' ? '示例文件夹' : '示例工具',
+    path: mode === 'folder' ? 'C:\\Tools\\Example' : 'C:\\Tools\\Example.exe',
+    type: mode === 'folder' ? 'folder' : 'exe',
+    icon: null,
+    iconPreset: mode === 'folder' ? 'folder' : 'utility',
+    categoryId: 'uncategorized',
+    favorite: false,
+    addedAt: Date.now(),
+    lastOpenedAt: 0,
+    openCount: 0,
+  }],
   inspectPaths: async () => [],
   refreshIcon: async () => ({ icon: null, iconResolvedFromTarget: false, resolvedTarget: '' }),
   refreshIcons: async () => ({}),
@@ -52,6 +64,7 @@ const fallback = {
   getFilePath: () => '',
   minimize: () => {},
   hide: () => {},
+  setZoomFactor: async (factor) => Math.round(Math.min(1.25, Math.max(0.8, Number(factor) || 1)) * 10) / 10,
   quit: () => {},
   setAutoLaunch: async (enabled) => enabled,
   getAutoLaunch: async () => true,

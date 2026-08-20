@@ -12,7 +12,7 @@ const toolShortcutAccelerators = new Set()
 
 const defaultState = {
   version: 3,
-  settings: { autoLaunch: true, hideAfterLaunch: false, launcherShortcut: 'Alt+X', windowBounds: null, windowLayoutVersion: 1 },
+  settings: { autoLaunch: true, hideAfterLaunch: false, launcherShortcut: 'Alt+X', zoomFactor: 1, windowBounds: null, windowLayoutVersion: 1 },
   categories: [
     { id: 'development', name: '开发工具', icon: 'terminal' },
     { id: 'security', name: '安全测试', icon: 'shield' },
@@ -51,11 +51,18 @@ function normalizeState(candidate) {
     settings: {
       ...defaultState.settings,
       ...sourceSettings,
+      zoomFactor: normalizeZoomFactor(sourceSettings.zoomFactor),
       windowLayoutVersion: Number.isFinite(sourceSettings.windowLayoutVersion) ? sourceSettings.windowLayoutVersion : 0,
     },
     categories: Array.isArray(source.categories) ? source.categories : defaultState.categories,
     tools: Array.isArray(source.tools) ? source.tools : defaultState.tools,
   }
+}
+
+function normalizeZoomFactor(value) {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return 1
+  return Math.round(Math.min(1.25, Math.max(0.8, numeric)) * 10) / 10
 }
 
 function writeState(state) {
@@ -327,6 +334,7 @@ function createWindow() {
     ? mainWindow.loadURL('http://127.0.0.1:48673')
     : mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'))
   loadWindow.then(() => {
+    mainWindow.webContents.setZoomFactor(normalizeZoomFactor(readState().settings?.zoomFactor))
     if (!process.argv.includes('--hidden')) {
       mainWindow.show()
       mainWindow.focus()
@@ -409,11 +417,12 @@ ipcMain.handle('state:save', (_event, state) => {
   updateTrayMenu()
   return { ok: saved, shortcutFailures, launcherShortcut: launcherResult.accelerator, launcherShortcutFailed: !launcherResult.ok }
 })
-ipcMain.handle('tools:pick', async () => {
+ipcMain.handle('tools:pick', async (_event, mode = 'files') => {
+  const pickFolder = mode === 'folder'
   const result = await dialog.showOpenDialog(mainWindow, {
     title: '添加到拾光工具箱',
-    properties: ['openFile', 'openDirectory', 'multiSelections'],
-    filters: [
+    properties: pickFolder ? ['openDirectory'] : ['openFile', 'multiSelections'],
+    filters: pickFolder ? undefined : [
       { name: '程序和快捷方式', extensions: ['exe', 'lnk', 'bat', 'cmd', 'ps1', 'url'] },
       { name: '所有文件', extensions: ['*'] },
     ],
@@ -436,6 +445,13 @@ ipcMain.handle('tools:check-paths', () => {
 ipcMain.handle('tools:reveal', (_event, targetPath) => {
   shell.showItemInFolder(targetPath)
   return true
+})
+ipcMain.handle('window:set-zoom', (_event, requested) => {
+  const zoomFactor = normalizeZoomFactor(requested)
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.setZoomFactor(zoomFactor)
+  const state = readState()
+  writeState({ ...state, settings: { ...state.settings, zoomFactor } })
+  return zoomFactor
 })
 ipcMain.handle('settings:auto-launch', (_event, enabled) => {
   const nextValue = Boolean(enabled)
