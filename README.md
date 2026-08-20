@@ -17,9 +17,9 @@
 
 无需配置开发环境，普通用户可以直接下载已经打包好的 Windows EXE：
 
-- **安装版（推荐）**：[下载 ShiguangToolbox-Installer-1.1.0-x64.exe](https://github.com/zhangnanydl/ShiguangToolbox/releases/download/v1.1.0/ShiguangToolbox-Installer-1.1.0-x64.exe)  
+- **安装版（推荐）**：[下载 ShiguangToolbox-Installer-1.2.0-x64.exe](https://github.com/zhangnanydl/ShiguangToolbox/releases/download/v1.2.0/ShiguangToolbox-Installer-1.2.0-x64.exe)
   适合长期使用。下载后双击安装，之后可以从开始菜单启动。
-- **便携版**：[下载 ShiguangToolbox-Portable-1.1.0-x64.exe](https://github.com/zhangnanydl/ShiguangToolbox/releases/download/v1.1.0/ShiguangToolbox-Portable-1.1.0-x64.exe)  
+- **便携版**：[下载 ShiguangToolbox-Portable-1.2.0-x64.exe](https://github.com/zhangnanydl/ShiguangToolbox/releases/download/v1.2.0/ShiguangToolbox-Portable-1.2.0-x64.exe)
   无需安装，下载后直接双击运行，适合放在移动硬盘或工具目录中。
 
 也可以进入 [GitHub Releases 发布页](https://github.com/zhangnanydl/ShiguangToolbox/releases/latest)，展开页面底部的 **Assets**，按需要选择带有 `Installer`（安装版）或 `Portable`（便携版）的 EXE 文件。请不要下载 `Source code`，它是供开发者使用的源代码压缩包，不能直接运行。
