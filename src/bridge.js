@@ -1,12 +1,12 @@
 const browserDefaults = {
-  version: 4,
+  version: 5,
   settings: { autoLaunch: true, hideAfterLaunch: false, launcherShortcut: 'Alt+X', systemPresetsSeeded: true },
   categories: [
     { id: 'development', name: '开发工具', icon: 'terminal' },
     { id: 'security', name: '安全测试', icon: 'shield' },
     { id: 'design', name: '设计', icon: 'palette' },
     { id: 'system', name: '系统工具', icon: 'settings' },
-    { id: 'windows-admin', name: 'Windows 管理', icon: 'settings' },
+    { id: 'windows-admin', name: 'Windows 管理', icon: 'settings', preset: true },
   ],
   tools: [
     { id: 'demo-1', name: 'Windows 终端', path: 'C:\\Windows\\System32\\cmd.exe', type: 'exe', icon: null, iconPreset: 'terminal', categoryId: 'system', favorite: true, shortcut: 'Ctrl+Alt+T', addedAt: 1, lastOpenedAt: 0, openCount: 0 },

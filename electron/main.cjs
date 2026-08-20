@@ -10,7 +10,7 @@ let launcherShortcut = ''
 let boundsSaveTimer
 const toolShortcutAccelerators = new Set()
 const windowsDirectory = process.env.WINDIR || 'C:\\Windows'
-const systemPresetCategory = { id: 'windows-admin', name: 'Windows 管理', icon: 'settings' }
+const systemPresetCategory = { id: 'windows-admin', name: 'Windows 管理', icon: 'settings', preset: true }
 const systemPresetTools = [
   { id: 'preset-task-manager', name: '任务管理器', path: path.join(windowsDirectory, 'System32', 'Taskmgr.exe'), type: 'exe', iconPreset: 'utility' },
   { id: 'preset-services', name: '服务管理', path: path.join(windowsDirectory, 'System32', 'services.msc'), type: 'msc', iconPreset: 'system' },
@@ -31,7 +31,7 @@ const systemPresetTools = [
 }))
 
 const defaultState = {
-  version: 4,
+  version: 5,
   settings: { autoLaunch: true, hideAfterLaunch: false, launcherShortcut: 'Alt+X', systemPresetsSeeded: true, windowBounds: null, windowLayoutVersion: 1 },
   categories: [
     { id: 'development', name: '开发工具', icon: 'terminal' },
@@ -68,9 +68,14 @@ function normalizeState(candidate) {
   const sourceSettings = source.settings && typeof source.settings === 'object' ? source.settings : {}
   const { zoomFactor: _legacyZoomFactor, ...normalizedSettings } = sourceSettings
   const shouldSeedSystemPresets = sourceSettings.systemPresetsSeeded !== true
-  const categories = Array.isArray(source.categories) ? [...source.categories] : [...defaultState.categories]
-  const tools = Array.isArray(source.tools) ? [...source.tools] : [...defaultState.tools]
-  if (shouldSeedSystemPresets && !categories.some((category) => category.id === systemPresetCategory.id)) categories.push(systemPresetCategory)
+  const sourceCategories = Array.isArray(source.categories) ? source.categories : defaultState.categories
+  const categories = [
+    ...sourceCategories.filter((category) => category.id !== systemPresetCategory.id),
+    systemPresetCategory,
+  ]
+  const presetIds = new Set(systemPresetTools.map((tool) => tool.id))
+  const sourceTools = Array.isArray(source.tools) ? source.tools : defaultState.tools
+  const tools = sourceTools.map((tool) => presetIds.has(tool.id) ? { ...tool, categoryId: systemPresetCategory.id } : tool)
   if (shouldSeedSystemPresets) {
     const existingIds = new Set(tools.map((tool) => tool.id))
     const existingPaths = new Set(tools.map((tool) => String(tool.path || '').toLowerCase()))
@@ -81,7 +86,7 @@ function normalizeState(candidate) {
   return {
     ...defaultState,
     ...source,
-    version: 4,
+    version: 5,
     settings: {
       ...defaultState.settings,
       ...normalizedSettings,

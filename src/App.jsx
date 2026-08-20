@@ -71,6 +71,8 @@ function NavItem({ active, icon: Icon, label, count, onClick }) {
 }
 
 function Sidebar({ categories, invalidCount, launcherShortcut, selection, setSelection, onAddCategory, onEditCategory, onReorderCategory, onSettings }) {
+  const presetCategories = categories.filter((category) => category.preset || category.id === 'windows-admin')
+  const customCategories = categories.filter((category) => !category.preset && category.id !== 'windows-admin')
   return (
     <aside className="sidebar">
       <Logo />
@@ -81,9 +83,14 @@ function Sidebar({ categories, invalidCount, launcherShortcut, selection, setSel
         <NavItem active={selection === 'invalid'} icon={CircleAlert} label="失效工具" count={invalidCount} onClick={() => setSelection('invalid')} />
       </nav>
       <div className="sidebar-divider" />
-      <div className="category-head"><span>分类</span><button title="新建分类" onClick={onAddCategory}><Plus size={17} /></button></div>
       <nav className="category-list" aria-label="工具分类">
-        {categories.map((category) => {
+        {presetCategories.length ? <div className="category-section-label">预置分类</div> : null}
+        {presetCategories.map((category) => {
+          const Icon = iconMap[category.icon] || Box
+          return <div className="category-item preset-category" key={category.id}><NavItem active={selection === category.id} icon={Icon} label={category.name} onClick={() => setSelection(category.id)} /></div>
+        })}
+        <div className="category-section-label custom-category-label"><span>我的分类</span><button title="新建分类" aria-label="新建分类" onClick={onAddCategory}><Plus size={16} /></button></div>
+        {customCategories.map((category) => {
           const Icon = iconMap[category.icon] || Box
           return <div className="category-item" key={category.id} draggable onDragStart={(event) => { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('application/x-toolbox-category', category.id) }} onDragOver={(event) => { if (event.dataTransfer.types.includes('application/x-toolbox-category')) event.preventDefault() }} onDrop={(event) => { const sourceId = event.dataTransfer.getData('application/x-toolbox-category'); if (sourceId) { event.preventDefault(); onReorderCategory(sourceId, category.id) } }}><NavItem active={selection === category.id} icon={Icon} label={category.name} onClick={() => setSelection(category.id)} /><button className="category-config" draggable="false" title={`管理分类「${category.name}」`} aria-label={`管理分类「${category.name}」`} onClick={() => onEditCategory(category)}><MoreHorizontal size={16} /></button></div>
         })}
@@ -533,11 +540,13 @@ export default function App() {
     return invalid
   }, [])
   const saveCategory = useCallback((updated) => {
+    if (updated.preset || updated.id === 'windows-admin') return
     setState((current) => ({ ...current, categories: current.categories.map((category) => category.id === updated.id ? updated : category) }))
     setModal(null)
     setToast('分类已更新')
   }, [])
   const deleteCategory = useCallback((category) => {
+    if (category.preset || category.id === 'windows-admin') { setToast('预置分类不能删除'); return }
     setState((current) => ({
       ...current,
       categories: current.categories.filter((item) => item.id !== category.id),
@@ -582,7 +591,7 @@ export default function App() {
         </div>
       </section>
       {dragging ? <div className="drop-overlay"><div><UploadCloud size={44} /><h2>松开即可添加</h2><p>工具将保存到「{selection !== 'all' && !['favorites', 'recent', 'invalid'].includes(selection) ? categoryMap.get(selection) : '未分类'}」</p></div></div> : null}
-      {modal?.type === 'category' ? <AddCategoryModal onClose={() => setModal(null)} onSave={(name) => { const id = `category-${Date.now()}`; setState((current) => ({ ...current, categories: [...current.categories, { id, name, icon: 'box' }] })); setSelection(id); setModal(null); setToast(`已创建分类「${name}」`) }} /> : null}
+      {modal?.type === 'category' ? <AddCategoryModal onClose={() => setModal(null)} onSave={(name) => { const id = `category-${Date.now()}`; setState((current) => ({ ...current, categories: [...current.categories, { id, name, icon: 'box', preset: false }] })); setSelection(id); setModal(null); setToast(`已创建分类「${name}」`) }} /> : null}
       {modal?.type === 'edit-category' ? <EditCategoryModal category={modal.category} onClose={() => setModal(null)} onSave={saveCategory} onDelete={deleteCategory} /> : null}
       {modal?.type === 'edit' ? <EditToolModal tool={modal.tool} tools={state.tools} categories={state.categories} launcherShortcut={state.settings?.launcherShortcut || 'Alt+X'} onRefreshIcon={refreshToolIcon} onClose={() => setModal(null)} onSave={(updated) => { setState((current) => ({ ...current, tools: current.tools.map((tool) => tool.id === updated.id ? updated : tool) })); if (updated.path !== modal.tool.path) setInvalidIds((current) => { const next = new Set(current); next.delete(updated.id); return next }); setModal(null); setToast('工具信息已更新') }} /> : null}
       {modal?.type === 'settings' ? <SettingsModal autoLaunch={autoLaunch} hideAfterLaunch={Boolean(state.settings?.hideAfterLaunch)} launcherShortcut={state.settings?.launcherShortcut || 'Alt+X'} tools={state.tools} invalidCount={invalidIds.size} onClose={() => setModal(null)} onAutoLaunch={async (enabled) => { const actual = await api.setAutoLaunch(enabled); setAutoLaunch(actual); setState((current) => ({ ...current, settings: { ...current.settings, autoLaunch: actual } })); setToast(actual ? '已开启开机自动启动' : '已关闭开机自动启动') }} onHideAfterLaunch={(enabled) => { setState((current) => ({ ...current, settings: { ...current.settings, hideAfterLaunch: enabled } })); setToast(enabled ? '启动工具后将自动隐藏' : '已关闭启动后自动隐藏') }} onLauncherShortcut={(shortcut) => { setState((current) => ({ ...current, settings: { ...current.settings, launcherShortcut: shortcut } })); setToast(`正在应用全局快捷键 ${shortcut}`) }} onCheckPaths={() => refreshInvalidPaths(true)} onRefreshIcons={refreshAllIcons} onExport={async () => { const result = await api.exportBackup(); if (result.ok) setToast('备份已导出') }} onImport={async () => { const result = await api.importBackup(); if (result.ok) { setState(result.state); setModal(null); await refreshInvalidPaths(false); setToast('备份恢复成功') } else if (!result.canceled) setToast(result.error || '备份恢复失败') }} /> : null}

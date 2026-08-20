@@ -61,6 +61,13 @@ button:focus-visible { outline: 2px solid rgba(22, 140, 255, .55); outline-offse
   scrollbar-gutter: stable;
   scrollbar-width: thin;
 }
+.category-section-label { display: flex; align-items: center; min-height: 26px; margin: 2px 10px 4px 12px; color: #7d8da0; font-size: 10px; font-weight: 650; letter-spacing: .08em; }
+.custom-category-label { justify-content: space-between; margin-top: 9px; padding-top: 9px; border-top: 1px solid rgba(83, 116, 151, .12); }
+.custom-category-label button { display: grid; place-items: center; width: 24px; height: 24px; color: #8191a4; background: transparent; border-radius: 7px; }
+.custom-category-label button:hover { color: #147fd4; background: rgba(31, 112, 193, .09); }
+.preset-category .nav-item { padding-right: 11px; color: #405d7b; background: rgba(22, 140, 255, .045); border: 1px solid rgba(22, 140, 255, .08); }
+.preset-category .nav-item:hover { background: rgba(22, 140, 255, .085); border-color: rgba(22, 140, 255, .16); }
+.preset-category .nav-item.active { background: rgba(22, 140, 255, .12); border-color: rgba(22, 140, 255, .2); }
 .category-list::-webkit-scrollbar { width: 6px; }
 .category-list::-webkit-scrollbar-thumb { background: #b5c5d6; border-radius: 8px; }
 .category-list::-webkit-scrollbar-thumb:hover { background: #91a8bf; }
