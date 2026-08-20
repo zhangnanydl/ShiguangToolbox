@@ -110,16 +110,17 @@ function AddToolsControl({ adding, onPick }) {
   const ref = useRef(null)
   useEffect(() => {
     if (!open) return undefined
-    const close = (event) => { if (!ref.current?.contains(event.target)) setOpen(false) }
-    window.addEventListener('pointerdown', close)
-    return () => window.removeEventListener('pointerdown', close)
+    const closeOutside = (event) => { if (!ref.current?.contains(event.target)) setOpen(false) }
+    const closeWithEscape = (event) => { if (event.key === 'Escape') setOpen(false) }
+    window.addEventListener('pointerdown', closeOutside)
+    window.addEventListener('keydown', closeWithEscape)
+    return () => { window.removeEventListener('pointerdown', closeOutside); window.removeEventListener('keydown', closeWithEscape) }
   }, [open])
   const pick = (mode) => { setOpen(false); onPick(mode) }
   return (
     <div className="add-control" ref={ref}>
-      <button className="add-button" title="选择程序、快捷方式或文件" disabled={adding} onClick={() => pick('files')}>{adding ? <span className="button-spinner" /> : <Plus size={18} />}<span>{adding ? '选择中' : '添加工具'}</span></button>
-      <button className="add-menu-button" title="更多添加方式" disabled={adding} aria-label="更多添加方式" aria-expanded={open} onClick={() => setOpen((value) => !value)}><ChevronDown size={15} /></button>
-      {open ? <div className="add-menu" role="menu"><button onClick={() => pick('files')}><File size={17} /><span><b>选择程序或文件</b><small>支持 EXE、快捷方式及普通文件</small></span></button><button onClick={() => pick('folder')}><FolderOpen size={17} /><span><b>选择文件夹</b><small>将常用目录加入工具箱</small></span></button></div> : null}
+      <button className={`add-launcher-button ${open ? 'open' : ''}`} title="添加工具" disabled={adding} aria-label="添加工具" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((value) => !value)}><span className="add-button-icon">{adding ? <span className="button-spinner" /> : <Plus size={17} />}</span><span>{adding ? '选择中' : '添加'}</span><ChevronDown className="add-button-chevron" size={14} /></button>
+      {open ? <div className="add-menu" role="menu" aria-label="添加工具方式"><button role="menuitem" onClick={() => pick('files')}><File size={17} /><span><b>程序、快捷方式或文件</b><small>支持批量选择 EXE、LNK 和普通文件</small></span></button><button role="menuitem" onClick={() => pick('folder')}><FolderOpen size={17} /><span><b>文件夹</b><small>选择一个常用目录加入工具箱</small></span></button></div> : null}
     </div>
   )
 }

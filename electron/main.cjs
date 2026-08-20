@@ -447,7 +447,12 @@ ipcMain.handle('state:save', (_event, state) => {
 })
 ipcMain.handle('tools:pick', async (_event, mode = 'files') => {
   const pickFolder = mode === 'folder'
-  const result = await dialog.showOpenDialog(mainWindow, {
+  const ownerWindow = BrowserWindow.fromWebContents(_event.sender) || mainWindow
+  if (!ownerWindow || ownerWindow.isDestroyed()) throw new Error('工具箱窗口不可用')
+  if (ownerWindow.isMinimized()) ownerWindow.restore()
+  if (!ownerWindow.isVisible()) ownerWindow.show()
+  ownerWindow.focus()
+  const result = await dialog.showOpenDialog(ownerWindow, {
     title: '添加到拾光工具箱',
     properties: pickFolder ? ['openDirectory'] : ['openFile', 'multiSelections'],
     filters: pickFolder ? undefined : [
